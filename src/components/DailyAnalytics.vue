@@ -140,69 +140,87 @@ export default {
   mounted() {
     console.log('Component mounted');
     this.fetchData(); // Fetch data when the component is mounted
+    this.totalArticles = 920;
+    this.totalSources = 69;
   },
 };
 </script>
 
-<style scoped>
+<style>
+/* General body styling */
+body {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Analytics container */
 .analytics-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1200px; /* Prevent stretching too wide */
+  min-width: 60%; /* Ensure it takes more space on large screens */
   margin: 0 auto;
-  min-height: 100vh;
   padding: 20px;
   box-sizing: border-box;
   background-color: #f5f5f5;
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  justify-content: center;
 }
 
+/* Center content on desktop screens */
+@media (min-width: 1024px) {
+  .analytics-container {
+    grid-template-columns: repeat(3, 1fr); /* Use three equal columns */
+    justify-items: center; /* Center items within their grid cells */
+    gap: 40px;
+    max-width: 85%; /* Make sure the content uses more horizontal space */
+  }
+}
+
+/* Current date styling */
 .current-date {
-  grid-column: span 2; /* Span two columns for larger screens */
-  font-size: 1.8em;
+  grid-column: span 3; /* Center across all columns */
+  font-size: 2.2em;
   font-weight: bold;
   color: #444;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  line-height: 1.5;
 }
 
-.cards-container {
-  display: contents; /* Remove redundant grid inside the container */
-}
-
+/* Card styling */
 .card {
-  background-color: #f9fff0;
+  background: linear-gradient(to bottom, #ffffff, #f9fff0);
   text-align: center;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 30px;
+  border-radius: 16px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
 .card:hover {
-  transform: scale(1.02);
+  transform: scale(1.05); /* Slight scale-up on hover */
+  box-shadow: 0px 8px 14px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
 }
 
-.articles-card,
-.sources-card {
-  flex: 1 1 300px;
-}
-
-.pie-chart-card {
-  grid-column: span 2; /* Make the pie chart span two columns */
-}
-
-.nested-list-card {
-  grid-column: span 2; /* Make the nested list span two columns */
-}
-
+/* Card content styling */
 .number {
-  font-size: 3em;
+  font-size: 4em;
   font-weight: bold;
   color: #333;
+  margin-bottom: 10px;
 }
 
 .label {
@@ -210,25 +228,32 @@ export default {
   color: #555;
 }
 
+/* Pie chart card and nested list adjustments */
+.pie-chart-card,
+.nested-list-card {
+  grid-column: span 2; /* Spans two columns for larger screens */
+}
+
 .chart-container {
   width: 100%;
-  max-width: 600px; /* Allow a larger pie chart */
-  height: 350px;
+  max-width: 800px; /* Wider chart on larger screens */
+  height: 400px; /* Slightly taller for balance */
   margin: 0 auto;
 }
 
+/* Responsive adjustments for smaller screens */
 @media (max-width: 768px) {
   .analytics-container {
-    grid-template-columns: 1fr; /* Stack everything vertically on smaller screens */
+    grid-template-columns: 1fr; /* Stack content vertically */
   }
 
   .current-date {
-    grid-column: span 1; /* Adjust date display */
+    grid-column: span 1;
   }
 
   .pie-chart-card,
   .nested-list-card {
-    grid-column: span 1; /* Make large cards fit single-column */
+    grid-column: span 1;
   }
 }
 </style>

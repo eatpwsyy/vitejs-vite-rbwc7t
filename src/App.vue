@@ -11,31 +11,17 @@
       <div class="col-md-4 mb-4">
         <DailyAnalytics />
       </div>
-      <div class="col-md-4 mb-4">
-        <WeeklyAnalytics />
-      </div>
-      <div class="col-md-4 mb-4">
-        <MonthlyAnalytics />
-      </div>
-    </div>
-    <div class="row">
-      <!-- Graphical Visualization Section -->
-      <div class="col-12 mb-4">
-        <Heatmap />
-      </div>
     </div>
   </div>
 </template>
 
 <script>
 import DailyAnalytics from './components/DailyAnalytics.vue';
-import Heatmap from './components/Heatmap.vue';
 
 export default {
   name: 'App',
   components: {
-    DailyAnalytics,
-    Heatmap
+    DailyAnalytics
   }
 }
 </script>

@@ -1,217 +1,234 @@
 <template>
   <div class="analytics-container">
-    <!-- Current Date Display -->
+    <!-- Yesterday's Date Display -->
     <div class="current-date">
-      {{ currentDate }}
+      Report for <br />
+      {{ yesterdayDisplayFormat }}
     </div>
-    <!-- Cards Container for Articles and Sources -->
-    <div class="cards-container">
-      <div class="card articles-card">
-        <div class="card-content">
-          <span class="number">{{ totalArticles }}</span>
-          <span class="label">Articles</span>
-        </div>
-      </div>
-      <div class="card sources-card">
-        <div class="card-content">
-          <span class="number">{{ totalSources }}</span>
-          <span class="label">Sources</span>
-        </div>
+    <!-- Cards: Articles and Sources -->
+    <div class="card articles-card">
+      <div class="card-content">
+        <span class="number">{{ totalArticles }}</span>
+        <span class="label">Articles</span>
       </div>
     </div>
-    <!-- New Cards Container for Pie Chart and Nested List -->
-    <div class="cards-container">
-      <!-- Pie Chart Card -->
-      <div class="card pie-chart-card">
-        <h3 class="card-title">Trending Topic</h3>
-        <div class="card-content">
-          <div class="chart-container">
-            <canvas id="pieChart"></canvas>
-          </div>
+    <div class="card sources-card">
+      <div class="card-content">
+        <span class="number">{{ totalSources }}</span>
+        <span class="label">Sources</span>
+      </div>
+    </div>
+    <!-- Pie Chart Card -->
+    <div class="card pie-chart-card">
+      <h3 class="card-title">Trending Topic</h3>
+      <div class="card-content">
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
         </div>
       </div>
-      <!-- Nested List Card -->
-      <div class="card nested-list-card">
-        <h3 class="card-title">Organization, Place and People</h3>
-        <div class="card-content">
-          <ol class="numbered-list">
-            <li>List item one
-              <ol type="a">
-                <li>Sub-item one</li>
-                <li>Sub-item two</li>
-                <li>Sub-item three</li>
-              </ol>
-            </li>
-            <li>List item two
-              <ol type="a">
-                <li>Sub-item one</li>
-                <li>Sub-item two</li>
-                <li>Sub-item three</li>
-              </ol>
-            </li>
-            <li>List item three
-              <ol type="a">
-                <li>Sub-item one</li>
-                <li>Sub-item two</li>
-                <li>Sub-item three</li>
-              </ol>
-            </li>
-          </ol>
-        </div>
+    </div>
+    <!-- Nested List Card -->
+    <div class="card nested-list-card">
+      <h3 class="card-title">Organization, Place, and People</h3>
+      <div class="card-content">
+        <ol class="numbered-list">
+          <li v-for="(entity, key) in nerData" :key="key">
+            {{ key }} <!-- Entity Type -->
+            <ol type="a">
+              <li v-for="(details, name) in entity" :key="name">
+                {{ name }} - Count: {{ details.count }},
+                Positive: {{ details.sentiment.positive }},
+                Negative: {{ details.sentiment.negative }}
+              </li>
+            </ol>
+          </li>
+        </ol>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { onMounted } from 'vue';
 import Chart from 'chart.js/auto';
-import ChartDataLabels from 'chartjs-plugin-datalabels'; // Import Data Labels Plugin
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 export default {
   name: 'DailyAnalytics',
   data() {
     return {
-      totalArticles: 2078,
-      totalSources: 164,
-      currentDate: this.formatDate(new Date()),
+      totalArticles: 0, // Initialize to 0
+      totalSources: 0, // Initialize to 0
+      yesterdayAPIFormat: this.getYesterdayDate('YYYYMMDD'), // Date for API request
+      yesterdayDisplayFormat: this.getYesterdayDate('readable'), // Date for display
+      trendingData: [], // Placeholder for trending topics
+      nerData: {}, // Placeholder for NER data
     };
   },
   methods: {
-    formatDate(date) {
-      // Format date as "Thursday, 14 November 2024"
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return date.toLocaleDateString(undefined, options);
+    getYesterdayDate(format) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1); // Subtract one day
+
+      if (format === 'YYYYMMDD') {
+        // API format: YYYYMMDD
+        const year = yesterday.getFullYear();
+        const month = String(yesterday.getMonth() + 1).padStart(2, '0'); // Leading zero for month
+        const day = String(yesterday.getDate()).padStart(2, '0'); // Leading zero for day
+        return `${year}${month}${day}`;
+      }
+
+      if (format === 'readable') {
+        // Readable format: e.g., "Wednesday, 20 November 2024"
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return yesterday.toLocaleDateString(undefined, options);
+      }
+
+      return '';
+    },
+    async fetchData() {
+      try {
+        console.log('Fetching API data...');
+        const response = await fetch(`/api/get-data?req_id=xxx&req_type=oview&freq=daily&date=${this.yesterdayAPIFormat}`);
+        console.log('API Response Status:', response.status);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Parsed API Data:', data);
+
+        this.totalArticles = data.articles;
+        this.totalSources = data.sources;
+        this.trendingData = data.trending;
+        this.nerData = data.OPP;
+
+        this.generatePieChart();
+      } catch (error) {
+        console.error('Error in fetchData:', error);
+      }
     },
     generatePieChart() {
-      const ctx = document.getElementById('pieChart').getContext('2d');
-      Chart.register(ChartDataLabels); // Register Data Labels Plugin
+      const ctx = document.getElementById('pieChart');
+      if (!ctx) {
+        console.warn('Canvas not found for pie chart');
+        return;
+      }
+      const chartCtx = ctx.getContext('2d');
+      Chart.register(ChartDataLabels);
 
-      new Chart(ctx, {
+      const labels = this.trendingData.map((item) => item.topic);
+      const dataValues = this.trendingData.map((item) => item.percentage);
+
+      new Chart(chartCtx, {
         type: 'pie',
         data: {
-          labels: ['Category A', 'Category B', 'Category C'],
-          datasets: [
-            {
-              data: [40, 30, 30], // Sample data percentages
-              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-            },
-          ],
+          labels,
+          datasets: [{ data: dataValues, backgroundColor: ['#FF6384', '#36A2EB'] }],
         },
         options: {
           responsive: true,
           maintainAspectRatio: true,
           plugins: {
-            legend: {
-              position: 'bottom', // Ensures legend stays within the card
-              labels: {
-                boxWidth: 15, // Adjust legend box size for better fit
-              },
-            },
-            datalabels: {
-              color: '#fff', // Color of the label text
-              formatter: (value, context) => {
-                const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
-                const percentage = ((value / total) * 100).toFixed(1) + '%';
-                return percentage; // Show percentage
-              },
-              font: {
-                weight: 'bold',
-                size: 14,
-              },
-            },
+            legend: { position: 'bottom' },
+            datalabels: { color: '#fff', formatter: (value) => `${value}%` },
           },
         },
       });
     },
   },
   mounted() {
-    this.generatePieChart();
+    console.log('Component mounted');
+    this.fetchData(); // Fetch data when the component is mounted
   },
 };
 </script>
 
 <style scoped>
 .analytics-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  margin: 20px;
-  background-color: #e0e0e0; /* Light grey background to enhance card visibility */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
   padding: 20px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
   border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .current-date {
-  font-size: 1.5em;
+  grid-column: span 2; /* Span two columns for larger screens */
+  font-size: 1.8em;
   font-weight: bold;
-  color: #333; /* Dark color for the date text */
+  color: #444;
+  text-align: center;
   margin-bottom: 20px;
 }
 
 .cards-container {
-  display: flex;
-  justify-content: center; /* Ensure the cards are centered */
-  gap: 20px; /* Space between the cards */
+  display: contents; /* Remove redundant grid inside the container */
 }
 
 .card {
-  flex: 1;
-  background-color: #f0ffd9; /* Light green background */
+  background-color: #f9fff0;
   text-align: center;
-  padding: 20px; /* Adjusted padding for better spacing */
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  min-width: 200px; /* Ensure card width is enough to fit the content */
-  max-width: 350px; /* Consistent max-width for all cards */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
 }
 
-.card-title {
-  font-size: 1.5em;
+.card:hover {
+  transform: scale(1.02);
+}
+
+.articles-card,
+.sources-card {
+  flex: 1 1 300px;
+}
+
+.pie-chart-card {
+  grid-column: span 2; /* Make the pie chart span two columns */
+}
+
+.nested-list-card {
+  grid-column: span 2; /* Make the nested list span two columns */
+}
+
+.number {
+  font-size: 3em;
   font-weight: bold;
   color: #333;
-  margin-bottom: 15px;
 }
 
-.card-content {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center; /* Ensures content is centered */
-  gap: 10px; /* Added gap to prevent overlap between number and label */
+.label {
+  font-size: 1.2em;
+  color: #555;
 }
 
 .chart-container {
   width: 100%;
-  height: 300px; /* Adjust height to ensure space for chart and legend */
-  position: relative;
+  max-width: 600px; /* Allow a larger pie chart */
+  height: 350px;
+  margin: 0 auto;
 }
 
-.pie-chart-card {
-  height: 400px; /* Height to accommodate both the pie chart and the legend */
-}
+@media (max-width: 768px) {
+  .analytics-container {
+    grid-template-columns: 1fr; /* Stack everything vertically on smaller screens */
+  }
 
-.nested-list-card ol {
-  text-align: left; /* Align the list to the left for better readability */
-  padding-left: 20px;
-}
+  .current-date {
+    grid-column: span 1; /* Adjust date display */
+  }
 
-.nested-list-card .numbered-list {
-  list-style-type: decimal; /* Remove bullet points for the top-level list */
-}
-
-.number {
-  font-size: 6.5em; /* Adjusted font size to balance the card */
-  font-weight: bold;
-  color: #333; /* Dark color for good contrast */
-  line-height: 1; /* Tighter line-height to keep content compact */
-}
-
-.label {
-  font-size: 1.5em; /* Increased the size slightly for better readability */
-  font-weight: normal;
-  color: #333; /* Dark color for the label as well */
+  .pie-chart-card,
+  .nested-list-card {
+    grid-column: span 1; /* Make large cards fit single-column */
+  }
 }
 </style>

@@ -1,97 +1,154 @@
 <template>
-  <canvas ref="pieChart" @click="handleClick"></canvas>
+  <div>
+    <canvas ref="pieChart"></canvas>
+    <!-- Optionally, display a message if there's no data -->
+    <div v-if="!hasValidData" class="no-data">
+      No data available to display the pie chart.
+    </div>
+  </div>
 </template>
 
 <script>
-import { Chart } from 'chart.js'; // Import the full Chart.js
-import ChartDataLabels from 'chartjs-plugin-datalabels'; // Import the data labels plugin
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+// Register Chart.js components and the datalabels plugin
+Chart.register(...registerables, ChartDataLabels);
 
 export default {
   props: {
     data: {
       type: Array,
       required: true,
+      default: () => [],
     },
   },
-  watch: {
-    // Watch for changes in the `data` prop and re-render the chart when it changes
-    data(newData) {
-      this.renderChart(newData);
+  data() {
+    return {
+      chart: null,
+    };
+  },
+  computed: {
+    /**
+     * Checks if the provided data is a non-empty array.
+     */
+    hasValidData() {
+      return Array.isArray(this.data) && this.data.length > 0;
     },
-  },
-  mounted() {
-    // Initially render the chart
-    this.renderChart(this.data);
-  },
-  beforeDestroy() {
-    // Clean up the chart instance when the component is destroyed
-    if (this.chartInstance) {
-      this.chartInstance.destroy();
-    }
   },
   methods: {
-    renderChart(data) {
-      const ctx = this.$refs.pieChart.getContext('2d');
-      Chart.register(ChartDataLabels);  // Register the data labels plugin
-
-      // Destroy any existing chart instance before creating a new one
-      if (this.chartInstance) {
-        this.chartInstance.destroy();
+    /**
+     * Renders the pie chart using Chart.js.
+     */
+    renderChart() {
+      if (!this.hasValidData) {
+        console.warn('PieChart expects a non-empty array as data prop.');
+        return;
       }
 
-      const chartData = {
-        labels: data.map(item => item.label),
-        datasets: [{
-          data: data.map(item => item.value),
-          backgroundColor: data.map(item => item.color),
-        }],
-      };
+      const ctx = this.$refs.pieChart.getContext('2d');
 
-      // Create the pie chart (use 'Chart' instead of 'Pie')
-      this.chartInstance = new Chart(ctx, {
-        type: 'pie',  // Use the 'pie' chart type here
-        data: chartData,
+      // Prepare labels and datasets
+      const labels = this.data.map((item) => item.label);
+      const values = this.data.map((item) => item.value);
+      const backgroundColors = this.data.map((item) => item.color);
+
+      // Extract keywords as strings for each slice (used in tooltips)
+      const keywords = this.data.map((item) => item.keywords.join(', '));
+
+      // Create the chart
+      this.chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              data: values,
+              backgroundColor: backgroundColors,
+              borderWidth: 1,
+              borderColor: '#fff', // Default border color
+            },
+          ],
+        },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: false,
+              display: false, // Hide legend if not needed
             },
             tooltip: {
               callbacks: {
-                label: (context) => {
-                  return `${context.label}: ${context.raw}%`;
+                label: function (context) {
+                  const keyword = keywords[context.dataIndex];
+                  const value = context.parsed;
+                  return `${keyword}: ${value.toFixed(2)}%`;
                 },
               },
             },
             datalabels: {
               color: '#fff',
-              formatter: (value, context) => {
-                return `${context.chart.data.labels[context.dataIndex]}: ${value}%`;
+              formatter: function(value, context) {
+                if (value > 5) {
+                  return `${context.chart.data.labels[context.dataIndex]}: ${value.toFixed(2)}%`;
+                }
+                return '';
               },
+              font: {
+                weight: 'bold',
+                size: 14,
+              },
+              align: 'center',
             },
+          },
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const chartElement = elements[0];
+              const index = chartElement.index;
+              const clickedLabel = labels[index];
+              this.$emit('sliceClick', clickedLabel);
+            }
           },
         },
       });
     },
+  },
+  mounted() {
+    this.renderChart();
+  },
+  watch: {
+    /**
+     * Watches for changes in the data prop and updates the chart accordingly.
+     */
+    data: {
+      handler(newData) {
+        if (this.chart) {
+          // Update the chart data
+          const labels = newData.map((item) => item.label);
+          const values = newData.map((item) => item.value);
+          const backgroundColors = newData.map((item) => item.color);
 
-    // Handle the click event on the pie chart
-    handleClick(event) {
-      // Get the chart instance's context to process the click event
-      const activePoints = this.chartInstance.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+          this.chart.data.labels = labels;
+          this.chart.data.datasets[0].data = values;
+          this.chart.data.datasets[0].backgroundColor = backgroundColors;
 
-      if (activePoints.length > 0) {
-        // Get the clicked slice index (the index of the slice)
-        const clickedIndex = activePoints[0].index;
-        
-        // Get the label of the clicked slice
-        const clickedTopic = this.data[clickedIndex].label;
-
-        // Emit the custom 'sliceClick' event with the clicked topic
-        this.$emit('sliceClick', clickedTopic);
-      }
+          // Update the chart
+          this.chart.update();
+        } else {
+          this.renderChart();
+        }
+      },
+      deep: true,
+      immediate: true,
     },
   },
 };
 </script>
+
+<style scoped>
+.no-data {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #6c757d;
+  margin-top: 20px;
+}
+</style>

@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import PieChart from './PieChart.vue'; // Ensure the PieChart component is correctly imported
+import PieChart from '../PieChart.vue'; // Ensure the PieChart component is correctly imported
 
 export default {
   components: {

@@ -35,7 +35,7 @@
       </div>
 
       <!-- 3. Pie Chart Card -->
-      <router-link to="/trending-topic" class="card pie-chart-card">
+      <router-link to="/daily-trending-topic" class="card pie-chart-card">
         <h3 class="card-title">Trending Topic</h3>
         <div class="card-content">
           <div class="chart-container">
@@ -45,7 +45,7 @@
       </router-link>
 
       <!-- 4. OPP Card -->
-      <div class="card nested-list-card">
+      <!--div class="card nested-list-card">
         <h3 class="card-title">Organization, Place, and People</h3>
         <div class="card-content">
           <ol class="numbered-list">
@@ -61,7 +61,7 @@
             </li>
           </ol>
         </div>
-      </div>
+      </div>-->
     </div>
   </div>
 </template>
@@ -71,7 +71,7 @@ import Chart from 'chart.js/auto';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 export default {
-  name: 'Overview',
+  name: 'DailyOverview',
   data() {
     return {
       totalArticles: 0,
@@ -165,7 +165,7 @@ export default {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom',
+              position: 'right',
               labels: {
                 generateLabels: (chart) => {
                   return chart.data.labels.map((label, index) => ({

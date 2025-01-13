@@ -2,8 +2,8 @@
   <div class="trending-topic">
     <!-- Header Section with Back Link -->
     <header class="header col-12 mb-4">
-      <router-link to="/" class="back-link" aria-label="Back to Dashboard">
-        &#8592; Back to Dashboard
+      <router-link to="/" class="back-link" aria-label="Back to Daily Overview">
+        &#8592; Back to Daily Overview
       </router-link>
       <h2>Daily Trending Topics</h2>
       <h3>{{ yesterdayDisplayFormat }}</h3>

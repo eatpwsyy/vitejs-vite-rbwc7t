@@ -1,3 +1,4 @@
+<!-- FwDataRequest.vue -->
 <template>
   <div class="fw-data-request">
     <!-- Header Section -->
@@ -13,24 +14,77 @@
     <div class="form-section">
       <form @submit.prevent="generateUrl">
         <!-- Required Fields -->
-        <div class="form-group">
-          <label for="news_type">
-            News Type <span class="required">*</span>
-            <div class="tooltip-container">
-              <span 
-                class="tooltip-icon"
-                aria-describedby="news_type-tooltip"
-                >ⓘ</span>
-              <div class="tooltip-content" id="news_type-tooltip" role="tooltip">
-                Latest news provides access to the latest and breaking news while news archive provides access to the old news data based on the date you provide.
-              </div>
-            </div>
-          </label>
-          <select v-model="form.news_type" id="news_type" class="form-control" required>
-            <option value="" disabled>Select News Type</option>
-            <option value="archive">Archive</option>
-            <option value="latest">Latest</option>
-          </select>
+        <FormField
+          label="News Type"
+          id="news_type"
+          required
+          tooltipId="news_type-tooltip"
+          tooltip="Latest news provides access to the latest and breaking news while news archive provides access to the old news data based on the date you provide."
+        >
+          <template #input>
+            <select v-model="form.news_type" id="news_type" class="form-control" required>
+              <option value="" disabled>Select News Type</option>
+              <option value="archive">Archive</option>
+              <option value="latest">Latest</option>
+            </select>
+          </template>
+        </FormField>
+
+        <!-- Query (q) -->
+        <FormField
+          label="Query (q) (Optional)"
+          id="q"
+          tooltipId="q-tooltip"
+          tooltip="Search news articles for specific keywords or phrases present in the news title, content, URL, meta keywords and meta description. Max 512 characters."
+        >
+          <template #input>
+            <input type="text" v-model="form.q" id="q" class="form-control" />
+          </template>
+        </FormField>
+
+        <!-- Conditional Fields Based on News Type -->
+        <div v-if="form.news_type === 'latest'">
+          <FormField
+            label="Timeframe"
+            id="timeframe"
+            required
+            tooltipId="timeframe-tooltip"
+            tooltip="Search the news articles for a specific timeframe. Either 24 or 48 hours ago."
+          >
+            <template #input>
+              <select v-model="form.timeframe" id="timeframe" class="form-control" required>
+                <option value="" disabled>Select Timeframe</option>
+                <option value="24">24 Jam Lalu</option>
+                <option value="48">48 Jam Lalu</option>
+              </select>
+            </template>
+          </FormField>
+        </div>
+
+        <div v-if="form.news_type === 'archive'">
+          <FormField
+            label="From Date (YYYY-MM-DD)"
+            id="from_date"
+            required
+            tooltipId="from_date-tooltip"
+            tooltip="Get news data from a particular start date in the past. ex: 2024-12-18"
+          >
+            <template #input>
+              <input type="date" v-model="form.from_date" id="from_date" class="form-control" required />
+            </template>
+          </FormField>
+
+          <FormField
+            label="To Date (YYYY-MM-DD)"
+            id="to_date"
+            required
+            tooltipId="to_date-tooltip"
+            tooltip="Get news data from a particular end date in the past. ex: 2024-12-28"
+          >
+            <template #input>
+              <input type="date" v-model="form.to_date" id="to_date" class="form-control" required />
+            </template>
+          </FormField>
         </div>
 
         <!-- Toggle Button for Optional Fields -->
@@ -49,475 +103,288 @@
         <!-- Optional Fields -->
         <transition name="fade">
           <div v-if="showAdvanced" id="optional-fields">
-            <!-- Query (q) -->
-            <div class="form-group">
-              <label for="q">
-                Query (q) (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="q-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="q-tooltip" role="tooltip">
-                    Search news articles for specific keywords or phrases present in the news title, content, URL, meta keywords and meta description. Max 512 characters.
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.q" id="q" class="form-control" />
-            </div>
-
             <!-- Query in Title (qInTitle) -->
-            <div class="form-group">
-              <label for="qInTitle">
-                Query in Title (qInTitle) (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="qInTitle-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="qInTitle-tooltip" role="tooltip">
-                    Search news articles for specific keywords or phrases present in the news titles only. Max 512 characters. Note: qInTitle can't be used with q or qInMeta parameter in the same query.
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.qInTitle" id="qInTitle" class="form-control" />
-            </div>
+            <FormField
+              label="Query in Title (qInTitle) (Optional)"
+              id="qInTitle"
+              tooltipId="qInTitle-tooltip"
+              tooltip="Search news articles for specific keywords or phrases present in the news titles only. Max 512 characters. Note: qInTitle can't be used with q or qInMeta parameter in the same query."
+            >
+              <template #input>
+                <input type="text" v-model="form.qInTitle" id="qInTitle" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Query in Meta (qInMeta) -->
-            <div class="form-group">
-              <label for="qInMeta">
-                Query in Meta (qInMeta) (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="qInMeta-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="qInMeta-tooltip" role="tooltip">
-                    Search news articles for specific keywords or phrases present in the news titles, URL, meta keywords and meta description only. Max 512 characters. Note: qInMeta can't be used with q or qInTitle parameter in the same query.
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.qInMeta" id="qInMeta" class="form-control" />
-            </div>
+            <FormField
+              label="Query in Meta (qInMeta) (Optional)"
+              id="qInMeta"
+              tooltipId="qInMeta-tooltip"
+              tooltip="Search news articles for specific keywords or phrases present in the news titles, URL, meta keywords and meta description only. Max 512 characters. Note: qInMeta can't be used with q or qInTitle parameter in the same query."
+            >
+              <template #input>
+                <input type="text" v-model="form.qInMeta" id="qInMeta" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Country -->
-            <div class="form-group">
-              <label for="country">
-                Country (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="country-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="country-tooltip" role="tooltip">
-                    Search the news articles from specific countries. Max 5 countries. Use country codes. ex: id,it,sg
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.country" id="country" class="form-control" />
-            </div>
+            <FormField
+              label="Country (Optional)"
+              id="country"
+              tooltipId="country-tooltip"
+              tooltip="Search the news articles from specific countries. Max 5 countries. Use country codes. ex: id,it,sg"
+            >
+              <template #input>
+                <input type="text" v-model="form.country" id="country" class="form-control" />
+              </template>
+            </FormField>
 
-            <!-- Category -->
-            <div class="form-group">
-              <label for="category">
-                Category (Optional)
-                <div class="tooltip-container">
-                  <span class="tooltip-icon" aria-describedby="category-tooltip">ⓘ</span>
-                  <div class="tooltip-content" id="category-tooltip" role="tooltip">
-                    Search the news articles for specific categories. Max 5 categories.
-                  </div>
-                </div>
-              </label>
-
-              <select 
-                v-model="selectedCategory" 
-                id="category" 
-                class="form-control" 
-                @change="addCategory"
-                :disabled="form.category.length >= 5"
-              >
-                <option disabled value="">Select Categories (Max 5)</option>
-                <option
-                  v-for="option in availableCategories"
-                  :key="option.value"
-                  :value="option.value"
-                >{{ option.text }}</option>
-              </select>
-              <small>
-                Selected {{ form.category.length }}/5 categories.
-              </small>
-
-              <!-- Display Selected Categories as Tags -->
-              <div class="selected-categories" v-if="form.category.length">
-                <span
-                  v-for="(category, index) in form.category"
-                  :key="index"
-                  class="category-tag"
-                >
-                  {{ getCategoryLabel(category) }}
-                  <button type="button" @click="removeCategory(index)" aria-label="Remove Category">&times;</button>
-                </span>
-              </div>
-            </div>
+            <!-- Category Selector -->
+            <CategorySelector
+              :categories="form.category"
+              :available-categories="availableCategories"
+              @add-category="addCategory"
+              @remove-category="removeCategory"
+            />
 
             <!-- Language -->
-            <div class="form-group">
-              <label for="language">
-                Language (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="language-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="language-tooltip" role="tooltip">
-                    Search the news articles for a specific language (English or Indonesia).
-                  </div>
-                </div>
-              </label>
-              <select v-model="form.language" id="language" class="form-control">
-                <option value="">Select Language</option>
-                <option value="en">English</option>
-                <option value="id">Indonesia</option>
-              </select>
-            </div>
+            <FormField
+              label="Language (Optional)"
+              id="language"
+              tooltipId="language-tooltip"
+              tooltip="Search the news articles for a specific language (English or Indonesia)."
+            >
+              <template #input>
+                <select v-model="form.language" id="language" class="form-control">
+                  <option value="">Select Language</option>
+                  <option value="en">English</option>
+                  <option value="id">Indonesia</option>
+                </select>
+              </template>
+            </FormField>
 
             <!-- Domain -->
-            <div class="form-group">
-              <label for="domain">
-                Domain (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="domain-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="domain-tooltip" role="tooltip">
-                    Search the news articles for specific news sources. Max 5 domains. ex: nytimes,bbc
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.domain" id="domain" class="form-control" />
-            </div>
+            <FormField
+              label="Domain (Optional)"
+              id="domain"
+              tooltipId="domain-tooltip"
+              tooltip="Search the news articles for specific news sources. Max 5 domains. ex: nytimes,bbc"
+            >
+              <template #input>
+                <input type="text" v-model="form.domain" id="domain" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Domain URL -->
-            <div class="form-group">
-              <label for="domainurl">
-                Domain URL (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="domainurl-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="domainurl-tooltip" role="tooltip">
-                    Search the news articles for specific domains or news sources URL. Max 5 sources. ex: nytimes.com,bbc.com,bbc.co.uk
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.domainurl" id="domainurl" class="form-control" />
-            </div>
+            <FormField
+              label="Domain URL (Optional)"
+              id="domainurl"
+              tooltipId="domainurl-tooltip"
+              tooltip="Search the news articles for specific domains or news sources URL. Max 5 sources. ex: nytimes.com,bbc.com,bbc.co.uk"
+            >
+              <template #input>
+                <input type="text" v-model="form.domainurl" id="domainurl" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Exclude Domain -->
-            <div class="form-group">
-              <label for="excludedomain">
-                Exclude Domain (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="excludedomain-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="excludedomain-tooltip" role="tooltip">
-                    You can exclude specific domains or news sources to search the news articles. Max 5 domains. ex: nytimes.com,bbc.com,bbc.co.uk
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.excludedomain" id="excludedomain" class="form-control" />
-            </div>
+            <FormField
+              label="Exclude Domain (Optional)"
+              id="excludedomain"
+              tooltipId="excludedomain-tooltip"
+              tooltip="You can exclude specific domains or news sources to search the news articles. Max 5 domains. ex: nytimes.com,bbc.com,bbc.co.uk"
+            >
+              <template #input>
+                <input type="text" v-model="form.excludedomain" id="excludedomain" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Exclude Field -->
-            <div class="form-group">
-              <label for="excludefield">
-                Exclude Field (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="excludefield-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="excludefield-tooltip" role="tooltip">
-                    Limit the response field. You can exclude multiple response fields in a single query. ex: source_icon,pubdate,link
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.excludefield" id="excludefield" class="form-control" />
-            </div>
+            <FormField
+              label="Exclude Field (Optional)"
+              id="excludefield"
+              tooltipId="excludefield-tooltip"
+              tooltip="Limit the response field. You can exclude multiple response fields in a single query. ex: source_icon,pubdate,link"
+            >
+              <template #input>
+                <input type="text" v-model="form.excludefield" id="excludefield" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Priority Domain -->
-            <div class="form-group">
-              <label for="prioritydomain">
-                Priority Domain (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="prioritydomain-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="prioritydomain-tooltip" role="tooltip">
-                    Search the news articles only from specific category of news domains. Top: Fetches news articles from the top 10%. Medium: Fetches news articles from the top 30%. Low: Fetches news articles from the top 50%.
-                  </div>
-                </div>
-              </label>
-              <select v-model="form.prioritydomain" id="prioritydomain" class="form-control">
-                <option value="">Select Priority Domain</option>
-                <option value="top">Top</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
+            <FormField
+              label="Priority Domain (Optional)"
+              id="prioritydomain"
+              tooltipId="prioritydomain-tooltip"
+              tooltip="Search the news articles only from specific category of news domains. Top: Fetches news articles from the top 10%. Medium: Fetches news articles from the top 30%. Low: Fetches news articles from the top 50%."
+            >
+              <template #input>
+                <select v-model="form.prioritydomain" id="prioritydomain" class="form-control">
+                  <option value="">Select Priority Domain</option>
+                  <option value="top">Top</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </template>
+            </FormField>
 
             <!-- Timezone -->
-            <div class="form-group">
-              <label for="timezone">
-                Timezone (Optional)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="timezone-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="timezone-tooltip" role="tooltip">
-                    Search the news articles for a specific timezone. ex: Asia/Jakarta
-                  </div>
-                </div>
-              </label>
-              <input type="text" v-model="form.timezone" id="timezone" class="form-control" />
-            </div>
+            <FormField
+              label="Timezone (Optional)"
+              id="timezone"
+              tooltipId="timezone-tooltip"
+              tooltip="Search the news articles for a specific timezone. ex: Asia/Jakarta"
+            >
+              <template #input>
+                <input type="text" v-model="form.timezone" id="timezone" class="form-control" />
+              </template>
+            </FormField>
 
             <!-- Image -->
-            <div class="form-group">
-              <label for="image">
-                Image (0 or 1)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="image-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="image-tooltip" role="tooltip">
-                    Search the news articles with featured image or without featured image. Use '1' for articles with featured image and '0' for articles without it.
-                  </div>
-                </div>
-              </label>
-              <input type="number" v-model.number="form.image" id="image" class="form-control" min="0" max="1" />
-            </div>
+            <FormField
+              label="Image (0 or 1)"
+              id="image"
+              tooltipId="image-tooltip"
+              tooltip="Search the news articles with featured image or without featured image. Use '1' for articles with featured image and '0' for articles without it."
+            >
+              <template #input>
+                <input type="number" v-model.number="form.image" id="image" class="form-control" min="0" max="1" />
+              </template>
+            </FormField>
 
             <!-- Video -->
-            <div class="form-group">
-              <label for="video">
-                Video (0 or 1)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="video-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="video-tooltip" role="tooltip">
-                    Search the news articles with featured video or without featured video. Use '1' for articles with featured video and '0' for articles without it.
-                  </div>
-                </div>
-              </label>
-              <input type="number" v-model.number="form.video" id="video" class="form-control" min="0" max="1" />
-            </div>
+            <FormField
+              label="Video (0 or 1)"
+              id="video"
+              tooltipId="video-tooltip"
+              tooltip="Search the news articles with featured video or without featured video. Use '1' for articles with featured video and '0' for articles without it."
+            >
+              <template #input>
+                <input type="number" v-model.number="form.video" id="video" class="form-control" min="0" max="1" />
+              </template>
+            </FormField>
 
             <!-- Size -->
-            <div class="form-group">
-              <label for="size">
-                Size (Max 50)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="size-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="size-tooltip" role="tooltip">
-                    You can customize the number of articles you get per request.
-                  </div>
-                </div>
-              </label>
-              <input type="number" v-model.number="form.size" id="size" class="form-control" min="1" max="50" />
-            </div>
+            <FormField
+              label="Size (Max 50)"
+              id="size"
+              tooltipId="size-tooltip"
+              tooltip="You can customize the number of articles you get per request."
+            >
+              <template #input>
+                <input type="number" v-model.number="form.size" id="size" class="form-control" min="1" max="50" />
+              </template>
+            </FormField>
 
             <!-- Full Content -->
-            <div class="form-group">
-              <label for="full_content">
-                Full Content (0 or 1)
-                <div class="tooltip-container">
-                  <span 
-                    class="tooltip-icon"
-                    aria-describedby="full_content-tooltip"
-                    >ⓘ</span>
-                  <div class="tooltip-content" id="full_content-tooltip" role="tooltip">
-                    Search the news articles with full content or without full content. Use '1' for news articles with full_content field and '0' for news articles without it.
-                  </div>
-                </div>
-              </label>
-              <input type="number" v-model.number="form.full_content" id="full_content" class="form-control" min="0" max="1" />
-            </div>
-
-            <!-- Conditional Fields Based on News Type -->
-            <div v-if="form.news_type === 'archive'">
-              <!-- From Date -->
-              <div class="form-group">
-                <label for="from_date">
-                  From Date (YYYY-MM-DD) <span class="required">*</span>
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="from_date-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="from_date-tooltip" role="tooltip">
-                      Get news data from a particular start date in the past. ex: 2024-12-18
-                    </div>
-                  </div>
-                </label>
-                <input type="date" v-model="form.from_date" id="from_date" class="form-control" required />
-              </div>
-
-              <!-- To Date -->
-              <div class="form-group">
-                <label for="to_date">
-                  To Date (YYYY-MM-DD) <span class="required">*</span>
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="to_date-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="to_date-tooltip" role="tooltip">
-                      Get news data from a particular end date in the past. ex: 2024-12-28
-                    </div>
-                  </div>
-                </label>
-                <input type="date" v-model="form.to_date" id="to_date" class="form-control" required />
-              </div>
-            </div>
+            <FormField
+              label="Full Content (0 or 1)"
+              id="full_content"
+              tooltipId="full_content-tooltip"
+              tooltip="Search the news articles with full content or without full content. Use '1' for news articles with full_content field and '0' for news articles without it."
+            >
+              <template #input>
+                <input type="number" v-model.number="form.full_content" id="full_content" class="form-control" min="0" max="1" />
+              </template>
+            </FormField>
 
             <div v-if="form.news_type === 'latest'">
               <!-- Remove Duplicate -->
-              <div class="form-group">
-                <label for="removeduplicate">
-                  Remove Duplicate (0 or 1)
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="removeduplicate-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="removeduplicate-tooltip" role="tooltip">
-                      The 'removeduplicate' parameter will allow users to filter out duplicate articles. Use '1' to remove duplicate articles.
-                    </div>
-                  </div>
-                </label>
-                <input type="number" v-model.number="form.removeduplicate" id="removeduplicate" class="form-control" min="0" max="1" />
-              </div>
+              <FormField
+                label="Remove Duplicate (0 or 1)"
+                id="removeduplicate"
+                tooltipId="removeduplicate-tooltip"
+                tooltip="The 'removeduplicate' parameter will allow users to filter out duplicate articles. Use '1' to remove duplicate articles."
+              >
+                <template #input>
+                  <input type="number" v-model.number="form.removeduplicate" id="removeduplicate" class="form-control" min="0" max="1" />
+                </template>
+              </FormField>
 
               <!-- Sentiment -->
-              <div class="form-group">
-                <label for="sentiment">
-                  Sentiment <span class="required">*</span>
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="sentiment-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="sentiment-tooltip" role="tooltip">
-                      Search the news articles based on the sentiment of the news article (positive, negative, neutral).
-                    </div>
-                  </div>
-                </label>
-                <select v-model="form.sentiment" id="sentiment" class="form-control" required>
-                  <option value="" disabled>Select Sentiment</option>
-                  <option value="positive">Positive</option>
-                  <option value="negative">Negative</option>
-                  <option value="neutral">Neutral</option>
-                </select>
-              </div>
-
-              <!-- Timeframe -->
-              <div class="form-group">
-                <label for="timeframe">
-                  Timeframe <span class="required">*</span>
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="timeframe-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="timeframe-tooltip" role="tooltip">
-                      Search the news articles for a specific timeframe. Either 24 or 48 hours ago.
-                    </div>
-                  </div>
-                </label>
-                <select v-model="form.timeframe" id="timeframe" class="form-control" required>
-                  <option value="" disabled>Select Timeframe</option>
-                  <option value="24">24 Jam Lalu</option>
-                  <option value="48">48 Jam Lalu</option>
-                </select>
-              </div>
+              <FormField
+                label="Sentiment"
+                id="sentiment"
+                tooltipId="sentiment-tooltip"
+                tooltip="Search the news articles based on the sentiment of the news article (positive, negative, neutral)."
+              >
+                <template #input>
+                  <select v-model="form.sentiment" id="sentiment" class="form-control">
+                    <option value="" disabled>Select Sentiment</option>
+                    <option value="positive">Positive</option>
+                    <option value="negative">Negative</option>
+                    <option value="neutral">Neutral</option>
+                  </select>
+                </template>
+              </FormField>
 
               <!-- Tag -->
-              <div class="form-group">
-                <label for="tag">
-                  Tag (Optional)
-                  <div class="tooltip-container">
-                    <span 
-                      class="tooltip-icon"
-                      aria-describedby="tag-tooltip"
-                      >ⓘ</span>
-                    <div class="tooltip-content" id="tag-tooltip" role="tooltip">
-                      Search the news articles for specific AI-classified tags.
-                    </div>
-                  </div>
-                </label>
-                <input type="text" v-model="form.tag" id="tag" class="form-control" />
-              </div>
+              <FormField
+                label="Tag (Optional)"
+                id="tag"
+                tooltipId="tag-tooltip"
+                tooltip="Search the news articles for specific AI-classified tags."
+              >
+                <template #input>
+                  <input type="text" v-model="form.tag" id="tag" class="form-control" />
+                </template>
+              </FormField>
             </div>
           </div>
-          </transition>
-            <!-- Submit Button for Generating URL -->
-            <div class="form-group">
-              <button type="submit" class="btn-submit" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Generating URL...' : 'Generate URL' }}
-              </button>
-            </div>
-          </form>
-        </div>
+        </transition>
 
-        <!-- Generated URL Section -->
-        <div v-if="isUrlGenerated" class="generated-link">
-          <p><strong>Generated API URL:</strong></p>
-          <a :href="generatedLink" target="_blank">{{ generatedLink }}</a>
-        </div>
-
-        <!-- Button to Fetch API Response -->
-        <div v-if="isUrlGenerated" class="fetch-api-button">
-          <button @click="fetchApiResponse" class="btn btn-primary" :disabled="isLoading">
-            {{ isLoading ? 'Fetching Data...' : 'Fetch API Response' }}
+        <!-- Submit Button for Generating URL -->
+        <div class="form-group">
+          <button type="submit" class="btn-submit" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Generating URL...' : 'Generate URL' }}
           </button>
         </div>
+      </form>
+    </div>
 
-        <!-- Loading State -->
-        <div v-if="isLoading" class="loading">Sending request...</div>
+    <!-- Generated URL Section -->
+    <div v-if="isUrlGenerated" class="generated-link">
+      <p><strong>Generated API URL:</strong></p>
+      <a :href="generatedLink" target="_blank">{{ generatedLink }}</a>
+    </div>
 
-        <!-- Error State -->
-        <div v-if="error" class="error">{{ error }}</div>
+    <!-- Button to Fetch API Response -->
+    <div v-if="isUrlGenerated" class="fetch-api-button">
+      <button @click="fetchApiResponse" class="btn btn-primary" :disabled="isLoading">
+        {{ isLoading ? 'Fetching Data...' : 'Fetch API Response' }}
+      </button>
+    </div>
 
-        <!-- API Response Section -->
-        <div v-if="response && !isLoading && !error" class="response-section">
-          <h3>API Response</h3>
-          
-          <button @click="downloadJSON" class="btn btn-success">
-            Download JSON
-          </button>
-          <br />
-          <pre>{{ JSON.stringify(response, null, 2) }}</pre>
-          <br />
-        </div>
-      </div>
-    </template>
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading">Sending request...</div>
+
+    <!-- Error State -->
+    <div v-if="error" class="error">{{ error }}</div>
+
+    <!-- API Response Section -->
+    <div v-if="response && !isLoading && !error" class="response-section">
+      <h3>API Response</h3>
+
+      <button @click="downloadJSON" class="btn btn-success">
+        Download JSON
+      </button>
+      <br />
+      <pre>{{ JSON.stringify(response, null, 2) }}</pre>
+      <br />
+    </div>
+  </div>
+</template>
 
 <script>
+import FormField from './FormField.vue';
+import CategorySelector from './CategorySelector.vue';
+
 export default {
   name: "FwDataRequest",
+  components: {
+    FormField,
+    CategorySelector,
+  },
   data() {
     return {
       form: {
@@ -545,22 +412,14 @@ export default {
         timeframe: "",
         tag: "",
       },
-      selectedCategory: "",
       isLoading: false,
       isSubmitting: false,
       error: null,
       response: null,
       generatedLink: "",
       isUrlGenerated: false,
-      showAdvanced: false, // New state variable
-    };
-  },
-  computed: {
-    /**
-     * Computes the list of available categories by excluding already selected ones.
-     */
-    availableCategories() {
-      const allCategories = [
+      showAdvanced: false,
+      availableCategories: [
         { value: "business", text: "Business" },
         { value: "crime", text: "Crime" },
         { value: "domestic", text: "Domestic" },
@@ -578,11 +437,8 @@ export default {
         { value: "tourism", text: "Tourism" },
         { value: "world", text: "World" },
         { value: "other", text: "Other" },
-      ];
-      return allCategories.filter(
-        (cat) => !this.form.category.includes(cat.value)
-      );
-    },
+      ],
+    };
   },
   methods: {
     /**
@@ -661,7 +517,7 @@ export default {
       this.error = null;
       return true;
     },
-    
+
     /**
      * Constructs the query parameters object based on the form data.
      */
@@ -685,7 +541,7 @@ export default {
       }
       return params;
     },
-  
+
     /**
      * Generates the API URL based on form data.
      */
@@ -693,10 +549,10 @@ export default {
       if (!this.validateForm()) {
         return;
       }
-  
+
       // Construct the query parameters
       const params = this.constructParams();
-  
+
       // Construct the query string
       const queryString = Object.keys(params)
         .map(
@@ -704,14 +560,14 @@ export default {
             `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
         )
         .join("&");
-  
+
       // Construct the generated URL
       this.generatedLink = `http://192.168.166.42:5000/api/fw-data?${queryString}`;
-  
+
       // Show the URL immediately
       this.isUrlGenerated = true;
     },
-  
+
     /**
      * Sends the API request to fetch the JSON data.
      */
@@ -723,12 +579,12 @@ export default {
             `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
         )
         .join("&");
-  
+
       this.isLoading = true;
       this.isSubmitting = true;
       this.error = null;
       this.response = null;
-  
+
       try {
         const response = await fetch(`/api/fw-data?${queryString}`, {
           method: "GET",
@@ -736,14 +592,14 @@ export default {
             "Content-Type": "application/json",
           },
         });
-  
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
             `HTTP error! Status: ${response.status}, Response: ${errorText}`
           );
         }
-  
+
         const data = await response.json();
         this.response = data;
       } catch (err) {
@@ -755,7 +611,7 @@ export default {
         this.isSubmitting = false;
       }
     },
-  
+
     /**
      * Downloads the JSON data as a file.
      */
@@ -763,20 +619,19 @@ export default {
       const blob = new Blob([JSON.stringify(this.response, null, 2)], {
         type: "application/json",
       });
-  
+
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "response.json";
       link.click();
     },
-    
+
     /**
      * Adds the selected category to the selectedCategories array.
      */
-    addCategory() {
-      if (this.selectedCategory && this.form.category.length < 5) {
-        this.form.category.push(this.selectedCategory);
-        this.selectedCategory = ""; // Reset the select
+     addCategory(category) {
+      if (category && this.form.category.length < 5) {
+        this.form.category.push(category);
         this.error = null;
       }
     },
@@ -789,41 +644,12 @@ export default {
       this.form.category.splice(index, 1);
       this.error = null;
     },
-
-    /**
-     * Helper method to get the display label for a category value.
-     * @param {string} value - The category value.
-     * @returns {string} - The display text for the category.
-     */
-    getCategoryLabel(value) {
-      const categoryMap = {
-        business: "Business",
-        crime: "Crime",
-        domestic: "Domestic",
-        education: "Education",
-        entertainment: "Entertainment",
-        environment: "Environment",
-        food: "Food",
-        health: "Health",
-        lifestyle: "Lifestyle",
-        politics: "Politics",
-        science: "Science",
-        sports: "Sports",
-        technology: "Technology",
-        top: "Top",
-        tourism: "Tourism",
-        world: "World",
-        other: "Other",
-      };
-      return categoryMap[value] || value;
-    },
   },
 };
 </script>
 
 <style scoped>
-/* Existing Styles */
-
+/* Header Styles */
 .header {
   position: relative;
   text-align: center;
@@ -858,43 +684,21 @@ h3 {
   color: #6c757d; /* Light gray text color */
 }
 
+/* Main Container */
 .fw-data-request {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+/* Form Section */
 .form-section {
   width: 80%;
   max-width: 800px;
   margin-bottom: 30px;
 }
 
-.form-group {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Indicate required fields dynamically */
-.form-group label .required {
-  color: red;
-  margin-left: 4px;
-}
-
-/* Disabled select and input styles */
-.form-group input[disabled],
-.form-group select[disabled] {
-  background-color: #e9ecef;
-  cursor: not-allowed;
-}
-
-.form-control {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
+/* Button Styles */
 .btn-submit {
   padding: 10px 20px;
   background-color: #28a745; /* Green button */
@@ -910,6 +714,37 @@ h3 {
   background-color: #218838;
 }
 
+.btn-primary {
+  padding: 10px 20px;
+  background-color: #007bff; /* Blue button */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-success {
+  padding: 10px 20px;
+  background-color: #28a745; /* Green button */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+}
+
+/* Loading, Error, and Response Sections */
 .loading,
 .error,
 .response-section,
@@ -937,125 +772,11 @@ h3 {
   text-align: left;
 }
 
-/* Selected Categories Tags */
-.selected-categories {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* Toggle Advanced Options */
+.toggle-advanced {
+  margin-bottom: 15px;
 }
 
-.category-tag {
-  background-color: #007bff;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  font-size: 0.9em;
-}
-
-.category-tag button {
-  background: none;
-  border: none;
-  color: white;
-  margin-left: 8px;
-  cursor: pointer;
-  font-size: 1em;
-  line-height: 1;
-}
-
-/* Optional: Hover effect for remove button */
-.category-tag button:hover {
-  color: #ffdddd;
-}
-
-/* Tooltip Container */
-.tooltip-container {
-  position: relative;
-  display: inline-block;
-  margin-left: 4px; /* Space between label and icon */
-}
-
-/* Tooltip Icon */
-.tooltip-icon {
-  color: #007bff;
-  cursor: help;
-  font-size: 0.9em;
-}
-
-/* Tooltip Text */
-.tooltip-content {
-  visibility: hidden;
-  width: 300px;
-  background-color: #333;
-  color: #fff;
-  text-align: left;
-  border-radius: 4px;
-  padding: 8px;
-  position: absolute;
-  z-index: 1;
-  bottom: 100%; /* Position above the icon */
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-/* Tooltip Arrow */
-.tooltip-content::after {
-  content: "";
-  position: absolute;
-  top: 100%; /* At the bottom edge of the tooltip */
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 2px;
-  border-style: solid;
-  border-color: #333 transparent transparent transparent;
-}
-
-/* Show Tooltip on Hover */
-.tooltip-container:hover .tooltip-content {
-  visibility: visible;
-  opacity: 1;
-}
-
-.form-group small {
-  color: #6c757d; /* Light gray */
-  margin-top: 5px;
-}
-
-/* Highlight required fields */
-.required {
-  color: red;
-  margin-left: 4px;
-}
-
-/* Style for the toggle button */
-.btn-toggle {
-  padding: 8px 12px;
-  background-color: #007bff; /* Blue color */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
-}
-
-.btn-toggle:hover {
-  background-color: #0056b3;
-}
-
-/* Fade Transition */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-
-/* Style for the toggle link */
 .toggle-link {
   color: #007bff; /* Bootstrap primary color */
   text-decoration: none;
@@ -1068,21 +789,15 @@ h3 {
   color: #0056b3; /* Darker shade on hover */
 }
 
-/* Remove default button styles if still using a button */
-.btn-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #007bff;
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: 0.9rem;
+/* Fade Transition */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
 }
 
-.btn-toggle:hover {
-  color: #0056b3;
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
   .form-section,
   .loading,
@@ -1103,6 +818,5 @@ h3 {
   .fetch-api-button {
     width: 100%;
   }
-
 }
 </style>

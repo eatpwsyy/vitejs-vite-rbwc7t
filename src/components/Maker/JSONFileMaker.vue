@@ -1,4 +1,4 @@
-<!-- FwDataRequest.vue -->
+<!-- JSONFileMaker.vue -->
 <template>
   <div class="fw-data-request">
     <!-- Header Section -->
@@ -139,12 +139,18 @@
               </template>
             </FormField>
 
-            <!-- Category Selector -->
-            <CategorySelector
-              :categories="form.category"
-              :available-categories="availableCategories"
-              @add-category="addCategory"
-              @remove-category="removeCategory"
+            <!-- Category Selector (Using MultiSelector.vue) -->
+            <MultiSelector
+              :items="form.category"
+              :available-items="availableCategories"
+              label="Category (Optional)"
+              id="category"
+              tooltip="Search the news articles for specific categories. Max 5 categories."
+              tooltipId="category-tooltip"
+              placeholder="Select Categories (Max 5)"
+              @add-item="addCategory"
+              @remove-item="removeCategory"
+              :item-label-map="categoryLabelMap"
             />
 
             <!-- Language -->
@@ -318,17 +324,19 @@
                 </template>
               </FormField>
 
-              <!-- Tag -->
-              <FormField
+              <!-- Tag Selector (Using MultiSelector.vue) -->
+              <MultiSelector
+                :items="form.tag"
+                :available-items="availableTags"
                 label="Tag (Optional)"
                 id="tag"
+                tooltip="Search the news articles for specific AI-classified tags. Max 5 tags."
                 tooltipId="tag-tooltip"
-                tooltip="Search the news articles for specific AI-classified tags."
-              >
-                <template #input>
-                  <input type="text" v-model="form.tag" id="tag" class="form-control" />
-                </template>
-              </FormField>
+                placeholder="Select Tags (Max 5)"
+                @add-item="addTag"
+                @remove-item="removeTag"
+                :item-label-map="tagLabelMap"
+              />
             </div>
           </div>
         </transition>
@@ -377,16 +385,26 @@
 
 <script>
 import FormField from './FormField.vue';
-import CategorySelector from './CategorySelector.vue';
+import MultiSelector from './MultiSelector.vue';
+import {
+  categoryLabelMap,
+  tagLabelMap,
+  availableCategories,
+  availableTags,
+} from '../../config/newsConfig.js';
 
 export default {
-  name: "FwDataRequest",
+  name: "JSONFileMaker",
   components: {
     FormField,
-    CategorySelector,
+    MultiSelector,
   },
   data() {
     return {
+      categoryLabelMap,
+      tagLabelMap,
+      availableCategories,
+      availableTags,
       form: {
         news_type: "archive",
         q: "",
@@ -398,7 +416,7 @@ export default {
         domain: "",
         domainurl: "",
         excludedomain: "",
-        excludefield: "",
+        excludefield: "ai_region,ai_org,",
         prioritydomain: "",
         timezone: "",
         image: null,
@@ -410,7 +428,7 @@ export default {
         removeduplicate: null,
         sentiment: "",
         timeframe: "",
-        tag: "",
+        tag: [],
       },
       isLoading: false,
       isSubmitting: false,
@@ -419,25 +437,6 @@ export default {
       generatedLink: "",
       isUrlGenerated: false,
       showAdvanced: false,
-      availableCategories: [
-        { value: "business", text: "Business" },
-        { value: "crime", text: "Crime" },
-        { value: "domestic", text: "Domestic" },
-        { value: "education", text: "Education" },
-        { value: "entertainment", text: "Entertainment" },
-        { value: "environment", text: "Environment" },
-        { value: "food", text: "Food" },
-        { value: "health", text: "Health" },
-        { value: "lifestyle", text: "Lifestyle" },
-        { value: "politics", text: "Politics" },
-        { value: "science", text: "Science" },
-        { value: "sports", text: "Sports" },
-        { value: "technology", text: "Technology" },
-        { value: "top", text: "Top" },
-        { value: "tourism", text: "Tourism" },
-        { value: "world", text: "World" },
-        { value: "other", text: "Other" },
-      ],
     };
   },
   methods: {
@@ -510,6 +509,12 @@ export default {
       // Validate 'category' (max 5)
       if (this.form.category.length > 5) {
         this.error = "You can select up to 5 categories.";
+        return false;
+      }
+
+      // Validate 'category' (max 5)
+      if (this.form.tag.length > 5) {
+        this.error = "You can select up to 5 tags.";
         return false;
       }
 
@@ -642,6 +647,25 @@ export default {
      */
     removeCategory(index) {
       this.form.category.splice(index, 1);
+      this.error = null;
+    },
+
+    /**
+     * Adds the selected category to the selectedCategories array.
+     */
+    addTag(tag){
+      if(tag && this.form.tag.length < 5){
+        this.form.tag.push(tag);
+        this.error = null;
+      }
+    },
+
+    /**
+     * Removes a tag from the selectedTags array by index.
+     * @param {number} index - The index of the tag to remove.
+     */
+     removeTag(index) {
+      this.form.tag.splice(index, 1);
       this.error = null;
     },
   },
